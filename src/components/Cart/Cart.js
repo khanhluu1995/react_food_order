@@ -1,11 +1,16 @@
 import classes from './Cart.module.css'
 import Modal from "../UI/Modal";
-import {useContext, useState} from "react";
+import {Fragment, useContext, useState} from "react";
 import CloseModalContext from "../../store/close-modal-context";
 import CartItem from "./CartItem";
 import AddItemsContext from "../../store/add-items-context";
+import Checkout from "./Checkout";
 
 const Cart = (props) => {
+
+    const [isCheckout, setIsCheckout] = useState(false)
+    const [isSubmitting, setIsSubmitting] = useState(false)
+    const [successOrder, setSuccessOrder] = useState(false)
 
     const ctx = useContext(CloseModalContext)
 
@@ -22,9 +27,32 @@ const Cart = (props) => {
     }
 
     const onOrderHandler = () => {
-        ctx.onCloseModal()
-        console.log('Ordering...')
+        setIsCheckout(true)
     }
+
+    const submitOrderHandler = (data) => {
+        setIsSubmitting(true)
+        fetch('https://react-http-test-8e21c-default-rtdb.firebaseio.com/orders.json', {
+            method: 'POST',
+            headers:{'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                user: data,
+                orderedItems: cartCtx.items
+            }),
+        }).then((response) => {
+            console.log('response: ', response)
+            // return response.json().then(data => {
+            //
+            // })
+            if (response.ok) {
+                setSuccessOrder(true)
+            }
+        }).catch(error=> {
+            console.log('error: ', error.message)
+        })
+        setIsSubmitting(false)
+    }
+
     const cartItems = (
         <ul className={classes['cart-items']}>
             {cartCtx.items.map((cartItem) =>
@@ -38,19 +66,29 @@ const Cart = (props) => {
             )}
         </ul>)
 
+    const modalActions = <div className={classes.actions}>
+        <button onClick={ctx.onCloseModal} className={classes['button--alt']}>Close</button>
+        <button onClick={onOrderHandler} className={classes.button}>Order Now!</button>
+    </div>
+
+    const generalCart = <Fragment>{cartItems}
+        <div>
+            <span className={classes.total}>Total Amount: {totalPrice}</span>
+        </div>
+        {isCheckout && <Checkout onSubmitOrder={submitOrderHandler} onCancel={ctx.onCloseModal}/>}
+        {!isCheckout && modalActions }</Fragment>
+
+    const successModal = <Fragment><div>
+        <span className={classes.total}>Sucessfully ordered your food! Happy Meals!</span>
+    </div>
+    <button onClick={ctx.onCloseModal} className={classes['button--alt']}>Close</button></Fragment>
+
     return(
         <div>
             {ctx.isOpen &&
             <Modal>
-                {cartItems}
-                <div>
-                    <span className={classes.total}>Total Amount</span>
-                    <span>{totalPrice}</span>
-                </div>
-                <div className={classes.actions}>
-                    <button onClick={ctx.onCloseModal} className={classes['button--alt']}>Close</button>
-                    <button onClick={onOrderHandler} className={classes.button}>Order Now!</button>
-                </div>
+                {!successOrder && generalCart}
+                {successOrder && successModal}
             </Modal>}
         </div>
 

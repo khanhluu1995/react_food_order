@@ -15,7 +15,7 @@ const HeaderCartButton = () => {
         )
     }, 0)
 
-    console.log(cartCtx.items)
+    // console.log(cartCtx.items)
 
     return(
         <button onClick={ctx.onOpenModal} className={headerCartButtonStyles.button}>
